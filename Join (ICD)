@@ -1,0 +1,82 @@
+---
+title: "Join"
+author: "MHRS Informatics (Matthew Miltimore, Lawrence Chan)"
+date: '2022-05-19'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r} 
+#read in libary for reading Excel document
+install.packages("readxl")
+library(readxl)
+```
+```{r}
+#rename excel documents and basic data cleaning (removing unused column for icd)
+df.iris <- read_excel("Test data Lawrence (2).xlsx", sheet = 3)
+df.access <- read_excel("Test data Lawrence (2).xlsx", sheet = 2)
+df.icd <- read_excel("ICD10 code from 2019.xlsx")
+df.icd2 <- df.icd[c(1:2)]
+```
+```{r} 
+#rename by matching column names between both datasets, changes CLIENT_NAME to PatientName across both dataframes 
+names(df.iris)[match("CLIENT_NAME", names(df.iris))] <- "PatientName"
+```
+```{r}
+#merge both dataframes together to create new merged dataframe based on Patient Name and MRN
+data_merge1 <- merge(df.iris, df.access, by = c("PatientName", "MRN"), all = TRUE)
+```
+```{r}
+#create and pull descriptions from corresponding diagnostic code
+code_count <- length(df.icd2$`Diagnosis Code`)
+for (i in 1:code_count) {
+    code <- as.character(df.icd2[i,1])
+    desc <- as.character(df.icd2[i,2])
+    data_merge1$DX_1DESC[data_merge1$DX_1==code] <- desc
+  data_merge1$DX_2DESC[data_merge1$DX_2==code] <- desc
+  data_merge1$DX_3DESC[data_merge1$DX_3==code] <- desc
+  data_merge1$DX_4DESC[data_merge1$DX_4==code] <- desc
+  }
+```
+```{r}
+match("DX_1", names(data_merge1))
+match("DX_2", names(data_merge1))
+match("DX_3", names(data_merge1))
+match("DX_4", names(data_merge1))
+match("DX_1DESC", names(data_merge1))
+match("DX_2DESC", names(data_merge1))
+match("DX_3DESC", names(data_merge1))
+match("DX_4DESC", names(data_merge1))
+```
+```{r}
+install.packages("dplyr")
+library(dplyr)
+```
+```{r}
+dataset_final = select(data_merge1,
+                       colnames(data_merge1)[1:match("DX_1", names(data_merge1))],
+                       colnames(data_merge1)[match("DX_1DESC", names(data_merge1))])
+```
+```{r}
+dataset_final <- data_merge1 %>%
+  select(1:match("DX_1", names(data_merge1)),
+        match("DX_1DESC", names(data_merge1)),
+        match("DX_2", names(data_merge1)),
+        match("DX_2DESC", names(data_merge1)),
+        match("DX_3", names(data_merge1)),
+        match("DX_3DESC", names(data_merge1)),
+        match("DX_4", names(data_merge1)),
+        match("DX_4DESC", names(data_merge1)),
+        (match("DX_4", names(data_merge1))+1):
+        (match("DX_1DESC", names(data_merge1))-1))
+```
+```{r}
+ncol(data_merge1) == ncol(dataset_final)
+```
+```{r}
+install.packages("writexl")
+library(writexl)
+write_xlsx(dataset_final, paste0("Join(", Sys.Date(), ").xlsx"))
+```
